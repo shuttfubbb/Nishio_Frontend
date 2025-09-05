@@ -1,0 +1,95 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+button {
+  border: 1px solid black !important;
+}
+
+
+/* Sidebar styling */
+.sidebar-content {
+  background-color: #f8f9fa; /* Light gray background */
+  padding: 16px; /* Add padding */
+  border-right: 1px solid #dee2e6; /* Subtle border */
+  height: 100%; /* Full height */
+}
+
+.sidebar-content h2 {
+  font-size: 1.25rem; /* Larger font size */
+  color: #343a40; /* Dark gray text */
+  margin-bottom: 8px; /* Space below headings */
+}
+
+.sidebar-content button {
+  font-size: 0.875rem; /* Slightly smaller text */
+  padding: 8px 12px; /* Button padding */
+  border: none; /* Remove border */
+  border-radius: 4px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor */
+  transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.sidebar-content button:hover {
+  background-color: #e9ecef; /* Light hover effect */
+}
+
+.sidebar-content .flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Align items horizontally */
+  margin-bottom: 12px; /* Space between sections */
+}
+
+.sidebar-content .ml-2 {
+  margin-left: 8px; /* Adjust left margin */
+}
+
+/* .sidebar-content .border-black {
+  border-color: #343a40; 
+} */
+
+
+.border-black {
+  border: 2px solid black;
+}
+.slider-button {
+  padding: 2px 8px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+}
