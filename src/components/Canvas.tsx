@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Stage, Layer, Circle, Image as KonvaImage, Rect, Text } from 'react-konva';
 import { useImage } from 'react-konva-utils';
-import { Room, AnnotationState } from '../types';
+import { Room, AnnotationState, Point } from '../types';
 import { Stage as KonvaStage } from 'konva/lib/Stage';
 import '../index.css';
 import { log } from 'console';
@@ -76,24 +76,25 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
     if (!jsonData || mode !== 'drawBbox' || selectedType !== 'room') return;
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
-    setStartPos({ x: pointer.x / scale, y: pointer.y / scale }); // Store in pixel coordinates
+    setStartPos({ x: Math.round(pointer.x / scale), y: Math.round(pointer.y / scale) }); // Store in pixel coordinates
   };
 
   const handleMouseMove = (e: any) => {
     if (!jsonData || mode !== 'drawBbox' || selectedType !== 'room' || !startPos) return;
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
-    setEndPos({ x: pointer.x / scale, y: pointer.y / scale }); // Store in pixel coordinates
+    setEndPos({ x: Math.round(pointer.x / scale), y: Math.round(pointer.y / scale) }); // Store in pixel coordinates
   };
 
   const handleMouseUp = () => {
     if (!jsonData || mode !== 'drawBbox' || selectedType !== 'room' || !startPos || !endPos) return;
     const newData = [...jsonData];
     // Store pixel coordinates directly
-    const xMin = Math.min(startPos.x, endPos.x);
-    const yMin = Math.min(startPos.y, endPos.y);
-    const xMax = Math.max(startPos.x, endPos.x);
-    const yMax = Math.max(startPos.y, endPos.y);
+    const xMin = Math.round(Math.min(startPos.x, endPos.x));
+    const yMin = Math.round(Math.min(startPos.y, endPos.y));
+    const xMax = Math.round(Math.max(startPos.x, endPos.x));
+    const yMax = Math.round(Math.max(startPos.y, endPos.y));
+    console.log('Setting room dimensions to:', { xmin: xMin, ymin: yMin, xmax: xMax, ymax: yMax });
     newData[0].dimensions = { xmin: xMin, ymin: yMin, xmax: xMax, ymax: yMax };
     onUpdateAnnotations(newData);
     setStartPos(null);
@@ -104,24 +105,22 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
     if (!jsonData || mode !== 'point' || !selectedType || selectedType === 'room') return;
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
-    const x = Math.round(pointer.x / scale); // Ensure x is an integer
-    const y = Math.round(pointer.y / scale); // Ensure y is an integer
+    var x = Math.round(pointer.x / scale); // Ensure x is an integer
+    var y = Math.round(pointer.y / scale); // Ensure y is an integer
+    x = Math.max(x)
     const newData = [...jsonData];
 
     if (selectedType === 'furniture' && selectedFurniture) {
       const furnitureIndex = newData[0].furniture.findIndex((f) => f.item_code === selectedFurniture);
       console.log('Furniture Index:', furnitureIndex);
       console.log('Furniture Data:', newData[0].furniture[furnitureIndex]);
-      newData[0].furniture[furnitureIndex].item_positions.push([x, y]);
-      newData[0].furniture[furnitureIndex].item_quantity += 1;
+      newData[0].furniture[furnitureIndex].item_positions.push({ x, y });
     } 
     else if (selectedType === 'door') {
-      newData[0].doors.positions.push([x, y]);
-      newData[0].doors.quantity += 1;
+      newData[0].doors.push({ x, y });
     } 
     else if (selectedType === 'window') {
-      newData[0].windows.positions.push([x, y]);
-      newData[0].windows.quantity += 1;
+      newData[0].windows.push({ x, y });
     }
     onUpdateAnnotations(newData);
   };
@@ -170,11 +169,11 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
               )}
               {/* Furniture points */}
               {jsonData[0].furniture.map((item, index) =>
-                item.item_positions.map((pos, subIndex) => (
+                item.item_positions.map((pos: Point, subIndex: number) => (
                   <React.Fragment key={`furniture-${index}-${subIndex}`}>
                     <Circle
-                      x={pos[0]}
-                      y={pos[1]}
+                      x={pos.x}
+                      y={pos.y}
                       radius={5 / scale}
                       fill={getColor(item.item_code, index)}
                       stroke="black"
@@ -182,8 +181,8 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                     />
                     <Text
                       text={`${subIndex + 1}`}
-                      x={pos[0] + 5 / scale}
-                      y={pos[1] + 5 / scale}
+                      x={pos.x + 5 / scale}
+                      y={pos.y + 5 / scale}
                       fontSize={12 / scale}
                       fill={getColor(item.item_code, index)}
                     />
@@ -191,11 +190,11 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                 ))
               )}
               {/* Door points */}
-              {jsonData[0].doors.positions.map((position, index) => (
+              {jsonData[0].doors.map((position: Point, index: number) => (
                 <React.Fragment key={`door-${index}`}>
                   <Circle
-                    x={position[0]}
-                    y={position[1]}
+                    x={position.x}
+                    y={position.y}
                     radius={5 / scale}
                     fill={getColor('door', index)}
                     stroke="black"
@@ -203,19 +202,19 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                   />
                   <Text
                     text={`${index + 1}`}
-                    x={position[0] + 5 / scale}
-                    y={position[1] + 5 / scale}
+                    x={position.x + 5 / scale}
+                    y={position.y + 5 / scale}
                     fontSize={12 / scale}
                     fill={getColor('door', index)}
                   />
                 </React.Fragment>
               ))}
               {/* Window points */}
-              {jsonData[0].windows.positions.map((position, index) => (
+              {jsonData[0].windows.map((position: Point, index: number) => (
                 <React.Fragment key={`window-${index}`}>
                   <Circle
-                    x={position[0]}
-                    y={position[1]}
+                    x={position.x}
+                    y={position.y}
                     radius={5 / scale}
                     fill={getColor('window', index)}
                     stroke="black"
@@ -223,8 +222,8 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                   />
                   <Text
                     text={`${index + 1}`}
-                    x={position[0] + 5 / scale}
-                    y={position[1] + 5 / scale}
+                    x={position.x + 5 / scale}
+                    y={position.y + 5 / scale}
                     fontSize={12 / scale}
                     fill={getColor('window', index)}
                   />

@@ -175,12 +175,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </div>
             {expandedSections['doors'] &&
-              jsonData[0].doors.positions.map((position, index) => (
+              jsonData[0].doors.map((position, index) => (
                 <div key={`door-${index}`} className="ml-2">
                   <div className="flex items-center">
                     <span style={{ color: getColor('door', index), marginRight: '4px' }}>■</span>
                     <span>
-                      Door {index + 1}: ({Math.round(position[0])}, {Math.round(position[1])})
+                      Door {index + 1}: ({Math.round(position.x)}, {Math.round(position.y)})
                     </span>
                     <button
                       className="ml-2 px-1 py-0.5 text-sm bg-red-100 rounded border border-black"
@@ -205,12 +205,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </div>
             {expandedSections['windows'] &&
-              jsonData[0].windows.positions.map((position, index) => (
+              jsonData[0].windows.map((position, index) => (
                 <div key={`window-${index}`} className="ml-2">
                   <div className="flex items-center">
                     <span style={{ color: getColor('window', index), marginRight: '4px' }}>■</span>
                     <span>
-                      Window {index + 1}: ({Math.round(position[0])}, {Math.round(position[1])})
+                      Window {index + 1}: ({Math.round(position.x)}, {Math.round(position.y)})
                     </span>
                     <button
                       className="ml-2 px-1 py-0.5 text-sm bg-red-100 rounded border border-black"
@@ -227,13 +227,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="mb-4">
             <h2 className="font-bold">Furniture</h2>
             <div className="mt-2 ml-2">
-          <input
-            type="text"
-            value={newFurnitureType}
-            onChange={(e) => setNewFurnitureType(e.target.value)}
-            placeholder="Furniture Name"
-            className="border p-1 mr-2"
-          />
           <input
             type="text"
             value={newFurnitureCode}
@@ -261,13 +254,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }`}
                     onClick={() => onSelectType('furniture', furniture.item_code)}
                   >
-                    {`${furniture.item_type} - ${furniture.item_code}`}
+                    {`${furniture.item_code}`}
                   </button>
                   <button
                     className="ml-1 px-1 py-0.5 text-sm bg-yellow-200 rounded border border-black"
                     onClick={() => {
                       setEditIndex(index);
-                      setEditType(furniture.item_type);
                       setEditCode(furniture.item_code);
                     }}
                     title="Edit Furniture"
@@ -298,7 +290,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <div className="flex items-center">
                         <span style={{ color: getColor(furniture.item_code, index), marginRight: '4px' }}>■</span>
                         <span>
-                          Point {subIndex + 1}: ({Math.round(pos[0])}, {Math.round(pos[1])})
+                          Point {subIndex + 1}: ({Math.round(pos.x)}, {Math.round(pos.y)})
                         </span>
                         <button
                           className="ml-2 px-1 py-0.5 text-sm bg-red-100 rounded border border-black"

@@ -1,19 +1,24 @@
 export interface Room {
   room_name: string;
-  purpose: string;
+  room_type: string | '';
   shape: string;
-  dimensions: { xmin: number; ymin: number; xmax: number; ymax: number } | null;
-  doors: { quantity: number; positions: [number, number][] };
-  windows: { quantity: number; positions: [number, number][] };
+  dimensions: { xmin: number; ymin: number; xmax: number; ymax: number };
+  w: number;
+  d: number;
+  doors: Point[];
+  windows: Point[];
   school_type: string;
-  student_num: number;
+  maximum_occupancy: number;
   furniture: {
-    item_type: string;
     item_code: string;
-    item_quantity: number;
-    item_positions: [number, number][];
+    item_positions: Point[];
   }[];
-  image?: { filename: string; width: number; height: number };
+}
+
+
+export interface Point{
+  x: number;
+  y: number;
 }
 
 export interface AnnotationState {
@@ -23,4 +28,5 @@ export interface AnnotationState {
   mode: 'none' | 'drawBbox' | 'point';
   selectedType: 'room' | 'door' | 'window' | 'furniture' | null;
   selectedFurniture: string | null;
+  fileNames: string[];
 }

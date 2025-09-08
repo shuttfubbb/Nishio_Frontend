@@ -6,6 +6,7 @@ import { Canvas } from './components/Canvas';
 import { Sidebar } from './components/Sidebar';
 import { Stage as KonvaStage } from 'konva/lib/Stage';
 import './index.css';
+import { stat } from 'fs';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AnnotationState>({
@@ -15,9 +16,34 @@ const App: React.FC = () => {
     mode: 'none',
     selectedType: null,
     selectedFurniture: null,
+    fileNames: [],
   });
   const [imageURL, setImageURL] = useState<string[]>([]);
+  const [fileNames, setFileNames] = useState<string[]>([]);
   const [furnitureList, setFurnitureList] = useState<string[]>([]);
+  // Danh sách phòng dạng object { id, name }
+  type RoomListItem = { id: string; name: string };
+  const [roomList, setRoomList] = useState<RoomListItem[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState<string>('None');
+  // Hàm lấy danh sách phòng từ server
+  const fetchRoomList = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/rooms");
+      if (!response.ok) throw new Error("Failed to fetch room list");
+      const data = await response.json();
+
+      console.log("Fetched room list:", data);
+
+      setRoomList(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setRoomList([]);
+    }
+  };
+
+  // Lấy danh sách phòng khi mount
+  React.useEffect(() => {
+    fetchRoomList();
+  }, []);
   const [newFurnitureType, setNewFurnitureType] = useState<string>('');
   const [newFurnitureCode, setNewFurnitureCode] = useState<string>('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -25,10 +51,12 @@ const App: React.FC = () => {
   const [image] = useImage(imageURL[currentImageIndex] || '', 'anonymous');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  setFileNames([]);
+  const files = e.target.files;
     if (files) {
       const newUrls: string[] = [];
       const images: HTMLImageElement[] = [];
+      const newFileNames = Array.from(files).map((file) => file.name);
       Array.from(files).forEach((file) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
@@ -40,11 +68,13 @@ const App: React.FC = () => {
             setState((prev) => ({ ...prev, image: images }));
             setImageURL(newUrls);
             setCurrentImageIndex(0);
+            setFileNames((prev) => [...prev, ...newFileNames]);
           }
         };
       });
     }
   };
+
 
   const handleJsonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,10 +89,6 @@ const App: React.FC = () => {
         if (!jsonData || !Array.isArray(jsonData) || jsonData.length === 0) {
           throw new Error('JSON must be a non-empty array');
         }
-
-        // Get image dimensions for validation
-        const imageWidth = state.image?.[currentImageIndex]?.width || jsonData[0]?.image?.width || 1;
-        const imageHeight = state.image?.[currentImageIndex]?.height || jsonData[0]?.image?.height || 1;
 
         // Validate and process JSON
         const newData = [...jsonData];
@@ -86,56 +112,6 @@ const App: React.FC = () => {
         const allowedShapes = ['rectangle', 'circle'];
         room.shape = allowedShapes.includes(room.shape) ? room.shape : 'other';
 
-
-        // Ensure required fields
-        if (!room.doors) room.doors = { quantity: 0, positions: [] };
-        if (!room.windows) room.windows = { quantity: 0, positions: [] };
-        if (!room.furniture) room.furniture = [];
-
-        // Validate dimensions
-        if (room.dimensions) {
-          const { xmin, ymin, xmax, ymax } = room.dimensions;
-          if (
-            xmin < 0 || ymin < 0 || xmax > imageWidth || ymax > imageHeight ||
-            xmax < xmin || ymax < ymin
-          ) {
-            throw new Error(
-              `Invalid dimensions: Must be 0 <= xmin <= ${imageWidth}, 0 <= ymin <= ${imageHeight}, ` +
-              `xmax >= xmin, ymax >= ymin`
-            );
-          }
-        }
-
-        // Validate positions (doors, windows, furniture) as pixel coordinates
-        const validatePositions = (positions: [number, number][], type: string) => {
-          positions.forEach((pos, index) => {
-            if (
-              !Array.isArray(pos) || pos.length !== 2 ||
-              !Number.isInteger(pos[0]) || !Number.isInteger(pos[1]) ||
-              pos[0] < 0 || pos[0] > imageWidth || pos[1] < 0 || pos[1] > imageHeight
-            ) {
-              throw new Error(
-                `Invalid ${type} position at index ${index}: Must be [x, y] with ` +
-                `0 <= x <= ${imageWidth}, 0 <= y <= ${imageHeight}, and both x and y must be integers.`
-              );
-            }
-          });
-        };
-        validatePositions(room.doors.positions, 'door');
-        validatePositions(room.windows.positions, 'window');
-        room.furniture.forEach((f, i) => {
-          if (!f.item_type || !f.item_code || typeof f.item_quantity !== 'number') {
-            throw new Error(`Invalid furniture at index ${i}: Missing item_type, item_code, or item_quantity`);
-          }
-          if (f.item_quantity !== f.item_positions.length) {
-            throw new Error(
-              `Furniture ${f.item_code} quantity (${f.item_quantity}) does not match ` +
-              `positions (${f.item_positions.length})`
-            );
-          }
-          validatePositions(f.item_positions, `furniture ${f.item_code}`);
-        });
-
         // Update furniture list
         const jsonFurnitureCodes: string[] = room.furniture.map((f) => f.item_code).filter((t) => typeof t === 'string');
         const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
@@ -157,20 +133,19 @@ const App: React.FC = () => {
         ? [...state.jsonData]
         : [{
             room_name: 'New Room',
-            purpose: 'unknown',
+            room_type: '',
             shape: 'rectangle',
-            dimensions: null,
-            doors: { quantity: 0, positions: [] },
-            windows: { quantity: 0, positions: [] },
+            dimensions: { xmin: 0, ymin: 0, xmax: 0, ymax: 0 },
+            w: 0,
+            d: 0,
+            doors: [],
+            windows: [],
             school_type: 'unknown',
-            student_num: 0,
+            maximum_occupancy: 0,
             furniture: [],
-            image: { filename: '', width: 0, height: 0 },
           }];
       newData[0].furniture.push({
-        item_type: newFurnitureType,
         item_code: newFurnitureCode,
-        item_quantity: 0,
         item_positions: [],
       });
       setState((prev) => ({ ...prev, jsonData: newData, selectedType: 'furniture', selectedFurniture: newFurnitureCode }));
@@ -193,13 +168,10 @@ const App: React.FC = () => {
     const newData = [...state.jsonData];
     if (type === 'furniture') {
       newData[0].furniture[index].item_positions.splice(subIndex, 1);
-      newData[0].furniture[index].item_quantity -= 1;
     } else if (type === 'door') {
-      newData[0].doors.positions.splice(subIndex, 1);
-      newData[0].doors.quantity -= 1;
+      newData[0].doors.splice(subIndex, 1);
     } else if (type === 'window') {
-      newData[0].windows.positions.splice(subIndex, 1);
-      newData[0].windows.quantity -= 1;
+      newData[0].windows.splice(subIndex, 1);
     }
     setState((prev) => ({ ...prev, jsonData: newData }));
   };
@@ -234,7 +206,6 @@ const App: React.FC = () => {
     }
 
     const oldCode = newData[0].furniture[index].item_code;
-    newData[0].furniture[index].item_type = newType;
     newData[0].furniture[index].item_code = newCode;
   
     // Update furnitureList
@@ -253,23 +224,29 @@ const App: React.FC = () => {
   const handleAddDoor = () => {
     if (!state.jsonData) return;
     const newData = [...state.jsonData];
-    newData[0].doors.positions.push([0, 0]);
-    newData[0].doors.quantity += 1;
+    newData[0].doors.push({x: 0, y: 0});
     setState((prev) => ({ ...prev, jsonData: newData, selectedType: 'door' }));
   };
 
   const handleAddWindow = () => {
     if (!state.jsonData) return;
     const newData = [...state.jsonData];
-    newData[0].windows.positions.push([0, 0]);
-    newData[0].windows.quantity += 1;
+    newData[0].windows.push({x: 0, y: 0});
     setState((prev) => ({ ...prev, jsonData: newData, selectedType: 'window' }));
   };
+
+  const onHandleTypeRoomChange = (roomType: string) => {
+    if (!state.jsonData) return;
+    const newData = [...state.jsonData];
+    newData[0].room_type = roomType;
+    setState((prev) => ({ ...prev, jsonData: newData }));
+    setSelectedRoom(roomType);
+  }
 
   const handleDeleteRoom = () => {
     if (!state.jsonData) return;
     const newData = [...state.jsonData];
-    newData[0].dimensions = null;
+    newData[0].dimensions = { xmin: 0, ymin: 0, xmax: 0, ymax: 0 };
     setState((prev) => ({ ...prev, jsonData: newData }));
   };
 
@@ -286,24 +263,133 @@ const App: React.FC = () => {
     setState((prev) => ({ ...prev, scale: parseFloat(e.target.value) }));
   };
 
-  const uploadRooms = async () => {
-    console.log(state.jsonData);
+  const extractInfo = async () => {
+    if (!fileNames.length) {
+      alert("No files selected.");
+      return;
+    }
+    console.log("Sending file names:", fileNames);
     try {
-      const response = await fetch("http://localhost:8000/rooms", {
+      const response = await fetch("http://localhost:8000/gpt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(state.jsonData)
+        body: JSON.stringify({ files: fileNames })
       });
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.detail || "Upload failed");
+        throw new Error(err.detail || "Request failed");
       }
 
       const result = await response.json();
-      alert("Inserted IDs: " + result.inserted_ids.join(", "));
+      const jsonData = JSON.parse(result);
+      jsonData[0].doors = []
+      jsonData[0].windows = []
+      console.log("Received JSON:", jsonData);
+
+      // Validate and process JSON
+      const newData = [...jsonData];
+      const room = newData[0];
+
+      const codes = room.furniture?.map((f: { item_code: any; }) => f.item_code) || [];
+      const duplicates = codes.filter(
+        (code: any, idx: any) => codes.indexOf(code) !== idx
+      );
+      if (duplicates.length > 0) {
+        const uniqueDuplicates = Array.from(new Set(duplicates));
+        const msg =
+          `Duplicate furniture codes detected: ${uniqueDuplicates.join(", ")}.\n` +
+          "Do you want to continue importing this JSON?";
+        const proceed = window.confirm(msg);
+        if (!proceed) {
+          return;
+        }
+      }
+
+      const allowedShapes = ['rectangle', 'circle'];
+      room.shape = allowedShapes.includes(room.shape) ? room.shape : 'other';
+
+      // Update furniture list
+      const jsonFurnitureCodes: string[] = room.furniture.map((f: { item_code: any; }) => f.item_code).filter((t: any) => typeof t === 'string');
+      const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+      setFurnitureList(uniqueFurnitureCodes);
+
+      setState((prev) => ({ ...prev, jsonData: newData }));
+    } catch (error) {
+      alert("Error: " + String(error));
+    }
+  };
+
+
+
+  const uploadRooms = async () => {
+    try {
+      console.log("Uploading JSON data:", state.jsonData);
+      const x1 = state.jsonData?.[0].dimensions?.xmin || 0;
+      const x2 = state.jsonData?.[0].dimensions?.xmax || 0;
+      const y1 = state.jsonData?.[0].dimensions?.ymin || 0;
+      const y2 = state.jsonData?.[0].dimensions?.ymax || 0;
+      const alpha = 17.12; // Hệ số chuyển đổi từ pixel sang mm (ví dụ)
+
+      if (state.jsonData && state.jsonData[0]) {
+        state.jsonData[0].w = Math.round((y2 - y1) * alpha);
+        state.jsonData[0].d = Math.round((x2 - x1) * alpha);
+
+        for (let door of state.jsonData[0].doors) {
+          door.x = door.x - x1;
+          door.x = Math.max(door.x, 0);
+          door.x = Math.min(door.x, x2 - x1);
+          door.x = Math.floor(door.x * alpha);
+
+          door.y = door.y - y1;
+          door.y = Math.max(door.y, 0);
+          door.y = Math.min(door.y, y2 - y1);
+          door.y = Math.floor(door.y * alpha);
+        }
+        for (let window of state.jsonData[0].windows) {
+          window.x = window.x - x1;
+          window.x = Math.max(window.x, 0);
+          window.x = Math.min(window.x, x2 - x1);
+          window.x = Math.floor(window.x * alpha);
+
+          window.y = window.y - y1;
+          window.y = Math.max(window.y, 0);
+          window.y = Math.min(window.y, y2 - y1);
+          window.y = Math.floor(window.y * alpha);
+        }
+        for (let furniture of state.jsonData[0].furniture) {
+          for (let pos of furniture.item_positions) {
+            pos.x = pos.x - x1;
+            pos.x = Math.max(pos.x, 0);
+            pos.x = Math.min(pos.x, x2 - x1);
+            pos.x = Math.floor(pos.x * alpha);
+
+            pos.y = pos.y - y1;
+            pos.y = Math.max(pos.y, 0);
+            pos.y = Math.min(pos.y, y2 - y1);
+            pos.y = Math.floor(pos.y * alpha);
+          }
+        }
+        console.log("Processed JSON data for upload:", state.jsonData);
+        const response = await fetch("http://localhost:8000/roomdata", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(state.jsonData)
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || "Upload failed");
+        }
+
+        const result = await response.json();
+        alert("Inserted IDs: " + result.inserted_ids.join(", "));
+        handleReset();
+      }
     } catch (error) {
       alert("Error: " + String(error));
     }
@@ -358,7 +444,9 @@ const App: React.FC = () => {
       mode: 'none',
       selectedType: null,
       selectedFurniture: null,
+      fileNames: [],
     });
+    setSelectedRoom('None');
     setCurrentImageIndex(0);
     const fileInputs = document.querySelectorAll('input[type="file"]');
     fileInputs.forEach((input) => {
@@ -393,15 +481,13 @@ const App: React.FC = () => {
               className="border border-black p-1 w-full"
             />
           </div>
-          <div>
-            <label htmlFor="upload-json" className="block font-semibold mb-1">🧾 Upload annotation JSON</label>
-            <input
-              id="upload-json"
-              type="file"
-              accept=".json"
-              onChange={handleJsonUpload}
-              className="border border-black p-1 w-full"
-            />
+          <div className="mb-2">
+            <button
+                className="px-2 py-1 bg-green-600 text-white rounded border border-black"
+                onClick={extractInfo}
+              >
+                Extract Image's information
+              </button>
           </div>
         </div>
 
@@ -417,7 +503,7 @@ const App: React.FC = () => {
                 className="px-2 py-1 bg-green-600 text-white rounded border border-black"
                 onClick={uploadRooms}
               >
-                Save JSON
+                Save DATA
               </button>
               <button
                 onClick={handleReset}
@@ -429,12 +515,29 @@ const App: React.FC = () => {
             <hr className="border-black my-2" />
             <div className="mb-4">
               <h2 className="font-bold text-xl">Room Name</h2>
-              <input
-                type="text"
-                value={state.jsonData ? state.jsonData[0].room_name : ''}
-                onChange={handleRoomNameChange}
-                className="border p-1 w-full"
-              />
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-semibold whitespace-nowrap">Room Name Detect</label>
+                <input
+                  type="text"
+                  value={state.jsonData ? state.jsonData[0].room_name : ''}
+                  readOnly
+                  className="border p-1 bg-gray-100 cursor-not-allowed flex-1"
+                  tabIndex={-1}
+                />
+              </div>
+              <div className="mt-2">
+                <label className="block font-semibold mb-1">Select Room</label>
+                <select
+                  className="border p-1 w-full"
+                  value={selectedRoom}
+                  onChange={e => onHandleTypeRoomChange(e.target.value)}
+                >
+                  <option value="None">None</option>
+                  {roomList.map((room, idx) => (
+                    <option key={room.id + '-' + idx} value={room.name}>{room.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <hr className="border-black my-2" />
             <Sidebar
