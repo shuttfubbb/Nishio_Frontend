@@ -259,20 +259,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="mb-4">
             <h2 className="font-bold">Furniture</h2>
             <div className="mt-2 ml-2">
-          <input
-            type="text"
-            value={newFurnitureCode}
-            onChange={(e) => setNewFurnitureCode(e.target.value)}
-            placeholder="Furniture Code"
-            className="border p-1 mr-2"
-          />
-          <button
-            onClick={onAddFurnitureType}
-            className="px-2 py-1 bg-blue-500 text-white rounded border border-black"
-          >
-            Add Furniture
-          </button>
-        </div>
+              <input
+                type="text" 
+                value={newFurnitureCode}
+                onChange={(e) => setNewFurnitureCode(e.target.value)}
+                placeholder="Furniture Code"
+                className="border p-1 mr-2"
+              />
+              <button
+                onClick={() => {
+                  if (!newFurnitureCode.trim()) {
+                    alert('Please enter furniture code');
+                    return;
+                  }
+                  onAddFurnitureType();
+                }}
+                className="px-2 py-1 bg-blue-500 text-white rounded border border-black"
+                disabled={!newFurnitureCode.trim()}
+              >
+                Add Furniture
+              </button>
+            </div>
             {jsonData[0].furniture.map((furniture, index) => (
               <div key={`furniture-${index}`} className="ml-2">
                 <hr className="border-black my-2" />

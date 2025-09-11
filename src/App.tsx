@@ -126,7 +126,7 @@ const App: React.FC = () => {
     };
     reader.readAsText(file);
   };
-
+/*
   const handleAddFurnitureType = () => {
     if (newFurnitureType && newFurnitureCode && !furnitureList.includes(newFurnitureCode)) {
       setFurnitureList([...furnitureList, newFurnitureCode]);
@@ -154,7 +154,57 @@ const App: React.FC = () => {
       setNewFurnitureCode('');
     }
   };
+*/
+  const handleAddFurnitureType = () => {
+    // Validate input
+    if (!newFurnitureCode.trim()) {
+      alert('Please enter furniture code');
+      return;
+    }
 
+    // Check for duplicates
+    if (furnitureList.includes(newFurnitureCode)) {
+      alert('This furniture code already exists!');
+      return;
+    }
+
+    // Create/update data
+    setFurnitureList(prev => [...prev, newFurnitureCode]);
+    
+    const newData: Room[] = state.jsonData 
+      ? [...state.jsonData]
+      : [{
+          room_name: 'New Room',
+          room_type: '',
+          shape: 'rectangle', 
+          dimensions: { xmin: 0, ymin: 0, xmax: 0, ymax: 0 },
+          w: 0,
+          d: 0,
+          doors: [],
+          windows: [],
+          school_type: 'unknown',
+          maximum_occupancy: 0,
+          furniture: [],
+      }];
+
+    // Add new furniture with both code and type
+    newData[0].furniture.push({
+      item_code: newFurnitureCode,
+      item_positions: [],
+    });
+
+    // Update state
+    setState(prev => ({
+      ...prev,
+      jsonData: newData,
+      selectedType: 'furniture',
+      selectedFurniture: newFurnitureCode
+    }));
+
+    // Clear inputs
+    setNewFurnitureCode('');
+  };
+  
   const handleSelectType = (type: AnnotationState['selectedType'], furnitureCode?: string) => {
     setState((prev) => ({
       ...prev,
