@@ -80,6 +80,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editType, setEditType] = useState('');
   const [editCode, setEditCode] = useState('');
+  // 👉 thêm state fuzzy + useEffect gọi API
+  const [fuzzyResults, setFuzzyResults] = useState<{ [key: string]: any[] }>({});
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({
@@ -87,7 +89,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
       [section]: !prev[section],
     }));
   };
+  React.useEffect(() => {
+    const fetchFuzzy = async () => {
+      if (jsonData && jsonData[0]?.furniture?.length > 0) {
+        const codes = jsonData[0].furniture.map(f => f.item_code);
+        const res = await fetch("http://localhost:8500/fuzzy_furniture", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codes })
+        });
+        const data = await res.json();
+        setFuzzyResults(data);
+      }
+    };
+    fetchFuzzy();
+  }, [jsonData]);
 
+    const fetchFuzzyForItem = async (code: string) => {
+    // Nếu đã có trong cache thì thôi
+    if (fuzzyResults[code]) return;
+
+    try {
+      const res = await fetch("http://localhost:8500/fuzzy_furniture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes: [code] }), // chỉ gửi 1 mã
+      });
+      const data = await res.json();
+      setFuzzyResults(prev => ({ ...prev, [code]: data[code] || [] }));
+    } catch (err) {
+      console.error("Fuzzy fetch failed:", err);
+    }
+  };
   const getColor = (type: string, index: number): string => {
     return colors[type] || stringToColor(type);
   };
@@ -266,12 +299,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     ✎
                   </button>
+
                 </div>
+              {fuzzyResults[furniture.item_code] && (
+                <div className="ml-6 mt-1">
+                <select
+                  className="border p-1 w-full"
+                  value={furniture.item_code || "__placeholder__"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onEditFurnitureType?.(index, "", val);
+                  }}
+                  onFocus={(e) => {
+                    const val = (e.target as HTMLSelectElement).value;
+                    onEditFurnitureType?.(index, "", val); // trigger khi focus
+                  }}
+                >
+                  {fuzzyResults[furniture.item_code]?.slice(0, 15).map((m, idx) => (
+                    <option key={idx} value={m.code}>
+                      {m.code} ({m.W}x{m.D}x{m.H}) [{m.score}%]
+                    </option>
+                  ))}
+                </select>
+                </div>
+              )}
 
                 <div className="flex items-center mt-2">
                   <button
                     className="px-1 py-0.5 text-sm bg-gray-300 rounded mr-2 border border-black"
-                    onClick={() => toggleSection(`furniture-${index}`)}
+                    onClick={() => {toggleSection(`furniture-${index}`)
+                  
+                    fetchFuzzyForItem(furniture.item_code);
+                  }}
                   >
                     {expandedSections[`furniture-${index}`] ? 'Collapse' : 'Expand'}
                   </button>

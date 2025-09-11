@@ -28,7 +28,7 @@ const App: React.FC = () => {
   // Hàm lấy danh sách phòng từ server
   const fetchRoomList = async () => {
     try {
-      const response = await fetch("http://localhost:8000/rooms");
+      const response = await fetch("http://localhost:8500/rooms");
       if (!response.ok) throw new Error("Failed to fetch room list");
       const data = await response.json();
 
@@ -114,7 +114,8 @@ const App: React.FC = () => {
 
         // Update furniture list
         const jsonFurnitureCodes: string[] = room.furniture.map((f) => f.item_code).filter((t) => typeof t === 'string');
-        const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+        //const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+        const uniqueFurnitureCodes: string[] = Array.from(new Set(jsonFurnitureCodes));
         setFurnitureList(uniqueFurnitureCodes);
 
         setState((prev) => ({ ...prev, jsonData: newData }));
@@ -198,7 +199,11 @@ const App: React.FC = () => {
   const handleEditFurnitureType = (index: number, newType: string, newCode: string) => {
     if (!state.jsonData) return;
     const newData = [...state.jsonData];
-  
+    
+    console.log(furnitureList.includes(newCode))
+    console.log(newCode)
+    console.log(newData[0].furniture[index].item_code)
+    console.log(newCode !== newData[0].furniture[index].item_code)
     // Check for duplicate furniture code
     if (furnitureList.includes(newCode) && newCode !== newData[0].furniture[index].item_code) {
       alert('This furniture code already exists!');
@@ -270,7 +275,7 @@ const App: React.FC = () => {
     }
     console.log("Sending file names:", fileNames);
     try {
-      const response = await fetch("http://localhost:8000/gpt", {
+      const response = await fetch("http://localhost:8500/gpt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -313,7 +318,8 @@ const App: React.FC = () => {
 
       // Update furniture list
       const jsonFurnitureCodes: string[] = room.furniture.map((f: { item_code: any; }) => f.item_code).filter((t: any) => typeof t === 'string');
-      const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+      //const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+      const uniqueFurnitureCodes: string[] = Array.from(new Set(jsonFurnitureCodes));
       setFurnitureList(uniqueFurnitureCodes);
 
       setState((prev) => ({ ...prev, jsonData: newData }));
@@ -373,7 +379,7 @@ const App: React.FC = () => {
           }
         }
         console.log("Processed JSON data for upload:", state.jsonData);
-        const response = await fetch("http://localhost:8000/roomdata", {
+        const response = await fetch("http://localhost:8500/roomdata", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
