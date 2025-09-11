@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editType, setEditType] = useState('');
   const [editCode, setEditCode] = useState('');
-  // 👉 thêm state fuzzy + useEffect gọi API
+  // thêm state fuzzy + useEffect gọi API
   const [fuzzyResults, setFuzzyResults] = useState<{ [key: string]: any[] }>({});
 
   const toggleSection = (section: string) => {
@@ -106,7 +106,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [jsonData]);
 
     const fetchFuzzyForItem = async (code: string) => {
-    // Nếu đã có trong cache thì thôi
     if (fuzzyResults[code]) return;
 
     try {

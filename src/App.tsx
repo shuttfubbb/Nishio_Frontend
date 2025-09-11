@@ -115,7 +115,7 @@ const App: React.FC = () => {
         // Update furniture list
         const jsonFurnitureCodes: string[] = room.furniture.map((f) => f.item_code).filter((t) => typeof t === 'string');
         //const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
-        const uniqueFurnitureCodes: string[] = Array.from(new Set(jsonFurnitureCodes));
+        const uniqueFurnitureCodes: string[] = Array.from(new Set(jsonFurnitureCodes)); // fix furinitureList not resetting when loading new json
         setFurnitureList(uniqueFurnitureCodes);
 
         setState((prev) => ({ ...prev, jsonData: newData }));
@@ -198,12 +198,8 @@ const App: React.FC = () => {
 
   const handleEditFurnitureType = (index: number, newType: string, newCode: string) => {
     if (!state.jsonData) return;
-    const newData = [...state.jsonData];
-    
-    console.log(furnitureList.includes(newCode))
-    console.log(newCode)
-    console.log(newData[0].furniture[index].item_code)
-    console.log(newCode !== newData[0].furniture[index].item_code)
+    const newData = [...state.jsonData]; 
+
     // Check for duplicate furniture code
     if (furnitureList.includes(newCode) && newCode !== newData[0].furniture[index].item_code) {
       alert('This furniture code already exists!');
