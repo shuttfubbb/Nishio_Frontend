@@ -311,21 +311,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="ml-6 mt-1">
                 <select
                   className="border p-1 w-full"
-                  value={furniture.item_code || "__placeholder__"}
+                  value={furniture.item_code || "__placeholder__"} 
                   onChange={(e) => {
-                    const val = e.target.value;
-                    onEditFurnitureType?.(index, "", val);
-                  }}
-                  onFocus={(e) => {
-                    const val = (e.target as HTMLSelectElement).value;
-                    onEditFurnitureType?.(index, "", val); // trigger khi focus
+                    const newCode = e.target.value;
+                    if (newCode !== furniture.item_code) { // call only if changed
+                      onEditFurnitureType?.(index, "", newCode);
+                    }
                   }}
                 >
-                  {fuzzyResults[furniture.item_code]?.slice(0, 15).map((m, idx) => (
-                    <option key={idx} value={m.code}>
-                      {m.code} ({m.W}x{m.D}x{m.H}) [{m.score}%]
-                    </option>
-                  ))}
+                {/* Add first options tiwce */}
+                {fuzzyResults[furniture.item_code]?.slice(0, 1).map((m, idx) => (
+                  <option key={`no no-${idx}`} value={m.code}>
+                    {m.code} ({m.W}x{m.D}x{m.H}) [{m.score}%] - Original
+                  </option>
+                ))}
+                {fuzzyResults[furniture.item_code]?.slice(0, 1).map((m, idx) => (
+                  <option key={`yes yes-${idx}`} value={m.code}> 
+                    {m.code} ({m.W}x{m.D}x{m.H}) [{m.score}%] - For-check
+                  </option>
+                ))}
+                {/* The remaining options from index 1 onwards */}
+                {fuzzyResults[furniture.item_code]?.slice(1, 15).map((m, idx) => (
+                  <option key={idx} value={m.code}>
+                    {m.code} ({m.W}x{m.D}x{m.H}) [{m.score}%]
+                  </option>
+                ))}
                 </select>
                 </div>
               )}
