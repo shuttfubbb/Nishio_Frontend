@@ -93,6 +93,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const fetchFuzzy = async () => {
       if (jsonData && jsonData[0]?.furniture?.length > 0) {
         const codes = jsonData[0].furniture.map(f => f.item_code);
+        const missingCodes = codes.filter(code => !fuzzyResults[code]); 
+          if (missingCodes.length === 0) return;
+
         const res = await fetch("http://localhost:8500/fuzzy_furniture", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -327,7 +330,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 ))}
                 {fuzzyResults[furniture.item_code]?.slice(0, 1).map((m, idx) => (
                   <option key={`yes yes-${idx}`} value={m.code}> 
-                    {m.code} ({m.W}x{m.D}x{m.H}) [{m.score}%] - For-check
+                    {m.code} ({m.W}x{m.D}x{m.H}) [{m.score}%] - Click
                   </option>
                 ))}
                 {/* The remaining options from index 1 onwards */}
