@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [imageURL, setImageURL] = useState<string[]>([]);
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [furnitureList, setFurnitureList] = useState<string[]>([]);
+  const [selectedSchoolType, setSelectedSchoolType] = useState<string>('None');
   // Danh sách phòng dạng object { id, name }
   type RoomListItem = { id: string; name: string };
   const [roomList, setRoomList] = useState<RoomListItem[]>([]);
@@ -28,7 +29,7 @@ const App: React.FC = () => {
   // Hàm lấy danh sách phòng từ server
   const fetchRoomList = async () => {
     try {
-      const response = await fetch("http://localhost:8000/rooms");
+      const response = await fetch("http://localhost:8500/rooms");
       if (!response.ok) throw new Error("Failed to fetch room list");
       const data = await response.json();
 
@@ -114,7 +115,8 @@ const App: React.FC = () => {
 
         // Update furniture list
         const jsonFurnitureCodes: string[] = room.furniture.map((f) => f.item_code).filter((t) => typeof t === 'string');
-        const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+        //const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+        const uniqueFurnitureCodes: string[] = Array.from(new Set(jsonFurnitureCodes)); // fix furinitureList not resetting when loading new json
         setFurnitureList(uniqueFurnitureCodes);
 
         setState((prev) => ({ ...prev, jsonData: newData }));
@@ -125,35 +127,57 @@ const App: React.FC = () => {
     };
     reader.readAsText(file);
   };
-
   const handleAddFurnitureType = () => {
-    if (newFurnitureType && newFurnitureCode && !furnitureList.includes(newFurnitureCode)) {
-      setFurnitureList([...furnitureList, newFurnitureCode]);
-      const newData: Room[] = state.jsonData
-        ? [...state.jsonData]
-        : [{
-            room_name: 'New Room',
-            room_type: '',
-            shape: 'rectangle',
-            dimensions: { xmin: 0, ymin: 0, xmax: 0, ymax: 0 },
-            w: 0,
-            d: 0,
-            doors: [],
-            windows: [],
-            school_type: 'unknown',
-            maximum_occupancy: 0,
-            furniture: [],
-          }];
-      newData[0].furniture.push({
-        item_code: newFurnitureCode,
-        item_positions: [],
-      });
-      setState((prev) => ({ ...prev, jsonData: newData, selectedType: 'furniture', selectedFurniture: newFurnitureCode }));
-      setNewFurnitureType('');
-      setNewFurnitureCode('');
+    // Validate input
+    if (!newFurnitureCode.trim()) {
+      alert('Please enter furniture code');
+      return;
     }
-  };
 
+    // Check for duplicates
+    if (furnitureList.includes(newFurnitureCode)) {
+      alert('This furniture code already exists!');
+      setNewFurnitureCode('');
+      return;
+    }
+
+    // Create/update data
+    setFurnitureList(prev => [...prev, newFurnitureCode]);
+    
+    const newData: Room[] = state.jsonData 
+      ? [...state.jsonData]
+      : [{
+          room_name: 'New Room',
+          room_type: '',
+          shape: 'rectangle', 
+          dimensions: { xmin: 0, ymin: 0, xmax: 0, ymax: 0 },
+          w: 0,
+          d: 0,
+          doors: [],
+          windows: [],
+          school_type: '',
+          maximum_occupancy: 0,
+          furniture: [],
+      }];
+
+    // Add new furniture with both code and type
+    newData[0].furniture.push({
+      item_code: newFurnitureCode,
+      item_positions: [],
+    });
+
+    // Update state
+    setState(prev => ({
+      ...prev,
+      jsonData: newData,
+      selectedType: 'furniture',
+      selectedFurniture: newFurnitureCode
+    }));
+
+    // Clear inputs
+    setNewFurnitureCode('');
+  };
+  
   const handleSelectType = (type: AnnotationState['selectedType'], furnitureCode?: string) => {
     setState((prev) => ({
       ...prev,
@@ -197,11 +221,12 @@ const App: React.FC = () => {
 
   const handleEditFurnitureType = (index: number, newType: string, newCode: string) => {
     if (!state.jsonData) return;
-    const newData = [...state.jsonData];
-  
+    const newData = [...state.jsonData]; 
+
     // Check for duplicate furniture code
     if (furnitureList.includes(newCode) && newCode !== newData[0].furniture[index].item_code) {
       alert('This furniture code already exists!');
+      setNewFurnitureCode('');
       return;
     }
 
@@ -243,6 +268,10 @@ const App: React.FC = () => {
     setSelectedRoom(roomType);
   }
 
+const onHandleTypeSchoolChange = (schoolType: string) => {
+  setSelectedSchoolType(schoolType);  // set dropdown
+};
+
   const handleDeleteRoom = () => {
     if (!state.jsonData) return;
     const newData = [...state.jsonData];
@@ -270,7 +299,7 @@ const App: React.FC = () => {
     }
     console.log("Sending file names:", fileNames);
     try {
-      const response = await fetch("http://localhost:8000/gpt", {
+      const response = await fetch("http://localhost:8500/gpt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -313,7 +342,8 @@ const App: React.FC = () => {
 
       // Update furniture list
       const jsonFurnitureCodes: string[] = room.furniture.map((f: { item_code: any; }) => f.item_code).filter((t: any) => typeof t === 'string');
-      const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+      //const uniqueFurnitureCodes: string[] = Array.from(new Set([...furnitureList, ...jsonFurnitureCodes]));
+      const uniqueFurnitureCodes: string[] = Array.from(new Set(jsonFurnitureCodes));
       setFurnitureList(uniqueFurnitureCodes);
 
       setState((prev) => ({ ...prev, jsonData: newData }));
@@ -332,7 +362,10 @@ const App: React.FC = () => {
       const y1 = state.jsonData?.[0].dimensions?.ymin || 0;
       const y2 = state.jsonData?.[0].dimensions?.ymax || 0;
       const alpha = 17.12; // Hệ số chuyển đổi từ pixel sang mm (ví dụ)
-
+      if (selectedSchoolType === "None") {  //validate select school type
+        alert("Select a school type before uploading.");
+        return;
+      }
       if (state.jsonData && state.jsonData[0]) {
         state.jsonData[0].w = Math.round((y2 - y1) * alpha);
         state.jsonData[0].d = Math.round((x2 - x1) * alpha);
@@ -372,8 +405,11 @@ const App: React.FC = () => {
             pos.y = Math.floor(pos.y * alpha);
           }
         }
+        if (selectedSchoolType !== "None") {
+          state.jsonData[0].school_type = selectedSchoolType;
+        }
         console.log("Processed JSON data for upload:", state.jsonData);
-        const response = await fetch("http://localhost:8000/roomdata", {
+        const response = await fetch("http://localhost:8500/roomdata", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -447,6 +483,7 @@ const App: React.FC = () => {
       fileNames: [],
     });
     setSelectedRoom('None');
+    setSelectedSchoolType("None");
     setCurrentImageIndex(0);
     const fileInputs = document.querySelectorAll('input[type="file"]');
     fileInputs.forEach((input) => {
@@ -539,6 +576,35 @@ const App: React.FC = () => {
                 </select>
               </div>
             </div>
+            <div style={{ height: '10px' }}></div>
+              {/* School Type section */}
+            <div className="mt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <label className="text-xs font-semibold whitespace-nowrap">School Type Detect </label>
+                <input
+                  type="text"
+                  value={state.jsonData ? state.jsonData[0].school_type : ''}
+                  readOnly
+                  className="border p-1 bg-gray-100 cursor-not-allowed flex-1"
+                  tabIndex={-1}
+                />
+              </div>
+            </div>
+                <div className="mt-2">
+                <label className="block font-semibold mb-1">Select School Type </label>
+                <select
+                  className="border p-1 w-full"
+                  value={selectedSchoolType}
+                  onChange={e => onHandleTypeSchoolChange(e.target.value)}
+                >
+                  <option value="None">None</option>
+                  <option value="nursery">nursery</option>
+                  <option value="elementary">elementary</option>
+                  <option value="middle">middle</option>
+                  <option value="high">high</option>
+                  <option value="special">special</option>
+                </select>
+              </div>
             <hr className="border-black my-2" />
             <Sidebar
             jsonData={state.jsonData}
