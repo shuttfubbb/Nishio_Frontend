@@ -7,7 +7,7 @@ export interface Room {
   d: number;
   doors: Point[];
   windows: Point[];
-  school_type: string;
+  school_type: string | '';
   maximum_occupancy: number;
   furniture: {
     item_code: string;
