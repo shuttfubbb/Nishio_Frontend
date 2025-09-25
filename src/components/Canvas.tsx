@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Stage, Layer, Circle, Image as KonvaImage, Rect, Text } from 'react-konva';
+import { Stage, Layer, Circle, Image as KonvaImage, Rect, Text, Arrow } from 'react-konva';
 import { useImage } from 'react-konva-utils';
-import { Room, AnnotationState, Point } from '../types';
+import { Room, AnnotationState, Door, Window, Position } from '../types';
 import { Stage as KonvaStage } from 'konva/lib/Stage';
 import '../index.css';
 import { log } from 'console';
@@ -114,13 +114,13 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
       const furnitureIndex = newData[0].furniture.findIndex((f) => f.item_code === selectedFurniture);
       console.log('Furniture Index:', furnitureIndex);
       console.log('Furniture Data:', newData[0].furniture[furnitureIndex]);
-      newData[0].furniture[furnitureIndex].item_positions.push({ x, y });
+      newData[0].furniture[furnitureIndex].item_positions.push({ x, y, direction: 0});
     } 
     else if (selectedType === 'door') {
-      newData[0].doors.push({ x, y });
+      newData[0].doors.push({ x, y, direction: 0 });
     } 
     else if (selectedType === 'window') {
-      newData[0].windows.push({ x, y });
+      newData[0].windows.push({ x, y, direction: 0 });
     }
     onUpdateAnnotations(newData);
   };
@@ -169,7 +169,7 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
               )}
               {/* Furniture points */}
               {jsonData[0].furniture.map((item, index) =>
-                item.item_positions.map((pos: Point, subIndex: number) => (
+                item.item_positions.map((pos: Position, subIndex: number) => (
                   <React.Fragment key={`furniture-${index}-${subIndex}`}>
                     <Circle
                       x={pos.x}
@@ -179,6 +179,16 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                       stroke="black"
                       strokeWidth={1 / scale}
                     />
+                    <Arrow
+                        x={pos.x}
+                        y={pos.y}
+                        points={[0, 0, 20, 0]} // mũi tên dài 20px, mặc định hướng lên
+                        rotation={pos.direction ?? 0}
+                        stroke={getColor(item.item_code, index)}
+                        fill={getColor(item.item_code, index)}
+                        pointerLength={6}
+                        pointerWidth={6}
+                      />
                     <Text
                       text={`${subIndex + 1}`}
                       x={pos.x + 5 / scale}
@@ -190,7 +200,7 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                 ))
               )}
               {/* Door points */}
-              {jsonData[0].doors.map((position: Point, index: number) => (
+              {jsonData[0].doors.map((position: Door, index: number) => (
                 <React.Fragment key={`door-${index}`}>
                   <Circle
                     x={position.x}
@@ -199,6 +209,16 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                     fill={getColor('door', index)}
                     stroke="black"
                     strokeWidth={1 / scale}
+                  />
+                  <Arrow
+                    x={position.x}
+                    y={position.y}
+                    points={[0, 0, 20, 0]}
+                    rotation={position.direction ?? 0}
+                    stroke={getColor('door', index)}
+                    fill={getColor('door', index)}
+                    pointerLength={6}
+                    pointerWidth={6}
                   />
                   <Text
                     text={`${index + 1}`}
@@ -210,7 +230,7 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                 </React.Fragment>
               ))}
               {/* Window points */}
-              {jsonData[0].windows.map((position: Point, index: number) => (
+              {jsonData[0].windows.map((position: Window, index: number) => (
                 <React.Fragment key={`window-${index}`}>
                   <Circle
                     x={position.x}
@@ -219,6 +239,16 @@ export const Canvas: React.FC<CanvasProps> = ({ image, jsonData, scale, mode, se
                     fill={getColor('window', index)}
                     stroke="black"
                     strokeWidth={1 / scale}
+                  />
+                  <Arrow
+                    x={position.x}
+                    y={position.y}
+                    points={[0, 0, 20, 0]}
+                    rotation={position.direction ?? 0}
+                    stroke={getColor('door', index)}
+                    fill={getColor('door', index)}
+                    pointerLength={6}
+                    pointerWidth={6}
                   />
                   <Text
                     text={`${index + 1}`}

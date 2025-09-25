@@ -249,14 +249,14 @@ const App: React.FC = () => {
   const handleAddDoor = () => {
     if (!state.jsonData) return;
     const newData = [...state.jsonData];
-    newData[0].doors.push({x: 0, y: 0});
+    newData[0].doors.push({x: 0, y: 0, direction: 0});
     setState((prev) => ({ ...prev, jsonData: newData, selectedType: 'door' }));
   };
 
   const handleAddWindow = () => {
     if (!state.jsonData) return;
     const newData = [...state.jsonData];
-    newData[0].windows.push({x: 0, y: 0});
+    newData[0].windows.push({x: 0, y: 0, direction: 0});
     setState((prev) => ({ ...prev, jsonData: newData, selectedType: 'window' }));
   };
 
@@ -367,8 +367,8 @@ const onHandleTypeSchoolChange = (schoolType: string) => {
         return;
       }
       if (state.jsonData && state.jsonData[0]) {
-        state.jsonData[0].w = Math.round((y2 - y1) * alpha);
-        state.jsonData[0].d = Math.round((x2 - x1) * alpha);
+        state.jsonData[0].w = Math.round((x2 - x1) * alpha);
+        state.jsonData[0].d = Math.round((y2 - y1) * alpha);
 
         for (let door of state.jsonData[0].doors) {
           door.x = door.x - x1;
@@ -380,6 +380,8 @@ const onHandleTypeSchoolChange = (schoolType: string) => {
           door.y = Math.max(door.y, 0);
           door.y = Math.min(door.y, y2 - y1);
           door.y = Math.floor(door.y * alpha);
+
+          door.direction = door.direction ?? 0;
         }
         for (let window of state.jsonData[0].windows) {
           window.x = window.x - x1;
@@ -391,6 +393,8 @@ const onHandleTypeSchoolChange = (schoolType: string) => {
           window.y = Math.max(window.y, 0);
           window.y = Math.min(window.y, y2 - y1);
           window.y = Math.floor(window.y * alpha);
+
+          window.direction = window.direction ?? 0;
         }
         for (let furniture of state.jsonData[0].furniture) {
           for (let pos of furniture.item_positions) {
@@ -403,6 +407,8 @@ const onHandleTypeSchoolChange = (schoolType: string) => {
             pos.y = Math.max(pos.y, 0);
             pos.y = Math.min(pos.y, y2 - y1);
             pos.y = Math.floor(pos.y * alpha);
+
+            pos.direction = pos.direction ?? 0;
           }
         }
         if (selectedSchoolType !== "None") {
@@ -603,6 +609,7 @@ const onHandleTypeSchoolChange = (schoolType: string) => {
                   <option value="middle">middle</option>
                   <option value="high">high</option>
                   <option value="special">special</option>
+                  <option value="compulsory">compulsory</option>
                 </select>
               </div>
             <hr className="border-black my-2" />
@@ -627,6 +634,7 @@ const onHandleTypeSchoolChange = (schoolType: string) => {
             newFurnitureCode={newFurnitureCode}
             setNewFurnitureCode={setNewFurnitureCode}
             onAddFurnitureType={handleAddFurnitureType}
+            onUpdateAnnotations={handleUpdateAnnotations}
             
           />
 
