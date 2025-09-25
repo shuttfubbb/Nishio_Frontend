@@ -5,20 +5,29 @@ export interface Room {
   dimensions: { xmin: number; ymin: number; xmax: number; ymax: number };
   w: number;
   d: number;
-  doors: Point[];
-  windows: Point[];
+  doors: Door[];
+  windows: Window[];
   school_type: string | '';
   maximum_occupancy: number;
   furniture: {
     item_code: string;
-    item_positions: Point[];
+    item_positions: Position[];
   }[];
 }
 
 
-export interface Point{
+export interface Position {
   x: number;
   y: number;
+  direction: number;
+}
+
+export interface Door extends Position {}
+export interface Window extends Position {}
+
+export interface Furniture {
+  item_code: string;
+  item_positions: Position[];
 }
 
 export interface AnnotationState {

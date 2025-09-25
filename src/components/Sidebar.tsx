@@ -57,6 +57,7 @@ interface SidebarProps {
   newFurnitureCode: string;
   setNewFurnitureCode: (val: string) => void;
   onAddFurnitureType: () => void;
+  onUpdateAnnotations?: (jsonData: Room[]) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -75,6 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   newFurnitureCode,
   setNewFurnitureCode,
   onAddFurnitureType,
+  onUpdateAnnotations
 }) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -217,6 +219,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span>
                       Door {index + 1}: ({Math.round(position.x)}, {Math.round(position.y)})
                     </span>
+                    {/* rotate buttons */}
+                    <button
+                      className="ml-2 px-1 py-0.5 text-sm bg-gray-200 rounded border border-black"
+                      title="Rotate Left"
+                      onClick={() => {
+                        const newData = [...jsonData];
+                        newData[0].doors[index].direction =
+                          ((position.direction ?? 0) - 30 + 360) % 360;
+                        onUpdateAnnotations?.(newData);
+                      }}
+                    >
+                      ⏪
+                    </button>
+                    <button
+                      className="ml-1 px-1 py-0.5 text-sm bg-gray-200 rounded border border-black"
+                      title="Rotate Right"
+                      onClick={() => {
+                        const newData = [...jsonData];
+                        newData[0].doors[index].direction =
+                          ((position.direction ?? 0) + 30) % 360;
+                        onUpdateAnnotations?.(newData);
+                      }}
+                    >
+                      ⏩
+                    </button>
+                    <span className="ml-2 text-xs">
+                      {position.direction ?? 0}°
+                    </span>
                     <button
                       className="ml-2 px-1 py-0.5 text-sm bg-red-100 rounded border border-black"
                       onClick={() => onDelete('door', 0, index)}
@@ -246,6 +276,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span style={{ color: getColor('window', index), marginRight: '4px' }}>■</span>
                     <span>
                       Window {index + 1}: ({Math.round(position.x)}, {Math.round(position.y)})
+                    </span>
+                    {/* rotate buttons */}
+                    <button
+                      className="ml-2 px-1 py-0.5 text-sm bg-gray-200 rounded border border-black"
+                      title="Rotate Left"
+                      onClick={() => {
+                        const newData = [...jsonData];
+                        newData[0].windows[index].direction =
+                          ((position.direction ?? 0) - 30 + 360) % 360;
+                        onUpdateAnnotations?.(newData);
+                      }}
+                    >
+                      ⏪
+                    </button>
+                    <button
+                      className="ml-1 px-1 py-0.5 text-sm bg-gray-200 rounded border border-black"
+                      title="Rotate Right"
+                      onClick={() => {
+                        const newData = [...jsonData];
+                        newData[0].windows[index].direction =
+                          ((position.direction ?? 0) + 30) % 360;
+                        onUpdateAnnotations?.(newData);
+                      }}
+                    >
+                      ⏩
+                    </button>
+                    <span className="ml-2 text-xs">
+                      {position.direction ?? 0}°
                     </span>
                     <button
                       className="ml-2 px-1 py-0.5 text-sm bg-red-100 rounded border border-black"
@@ -369,6 +427,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <span style={{ color: getColor(furniture.item_code, index), marginRight: '4px' }}>■</span>
                         <span>
                           Point {subIndex + 1}: ({Math.round(pos.x)}, {Math.round(pos.y)})
+                        </span>
+                        <button
+                        className="ml-2 px-1 py-0.5 text-sm bg-gray-200 rounded border border-black"
+                        title="Rotate Left"
+                        onClick={() => {
+                        const newData = [...jsonData];
+                        const pos = newData[0].furniture[index].item_positions[subIndex];
+                        pos.direction = ((pos.direction ?? 0) - 30 + 360) % 360;
+                        onUpdateAnnotations?.(newData);
+                      }}
+                        >
+                          ⏪
+                        </button>
+                        <button
+                        className="ml-1 px-1 py-0.5 text-sm bg-gray-200 rounded border border-black"
+                        title="Rotate Right"
+                        onClick={() => {
+                        const newData = [...jsonData];
+                        const pos = newData[0].furniture[index].item_positions[subIndex];
+                        pos.direction = ((pos.direction ?? 0) + 30) % 360;
+                        onUpdateAnnotations?.(newData);
+                      }}
+                        >
+                          ⏩
+                        </button>
+
+                        <span className="ml-2 text-xs">
+                          {pos.direction ?? 0}°
                         </span>
                         <button
                           className="ml-2 px-1 py-0.5 text-sm bg-red-100 rounded border border-black"
