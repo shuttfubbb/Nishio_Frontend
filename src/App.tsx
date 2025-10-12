@@ -29,7 +29,7 @@ const App: React.FC = () => {
   // Hàm lấy danh sách phòng từ server
   const fetchRoomList = async () => {
     try {
-      const response = await fetch("http://localhost:8500/rooms");
+      const response = await fetch("http://localhost:8500/roomtypes");
       if (!response.ok) throw new Error("Failed to fetch room list");
       const data = await response.json();
 
