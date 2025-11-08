@@ -199,6 +199,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <option value="other">🔺 Other</option>
             </select>
           </div>
+          {/* === Edit Maximum Occupancy === */}
+          <div className="mt-2 flex items-center ml-2">
+            <label className="font-semibold mr-2 w-36">Max Occupancy:</label>
+            <input
+              type="number"
+              min={0}
+              className="border border-black px-2 py-1 rounded flex-1"
+              value={jsonData[0].maximum_occupancy ?? 0}
+              onChange={(e) => {
+                const newData = [...jsonData];
+                newData[0].maximum_occupancy = parseInt(e.target.value) || 0;
+                onUpdateAnnotations?.(newData);
+              }}
+            />
+          </div>
 
           <hr className="border-black my-2" />
           <div className="mb-4">
